@@ -6,18 +6,21 @@ from binaryninja import (
     MediumLevelILOperation,
     ExpressionIndex,
     SegmentFlag,
-    SectionSemantics
+    SectionSemantics,
+    MediumLevelILFunction
 )
 
-
+has_data_appended = False
+STRING_BASE = 0xf000
 def outline_prints(analysis_context):
-    STRING_BASE = 0xf000
+    global has_data_appended
+    global STRING_BASE
 
     function = Function(handle=core.BNAnalysisContextGetFunction(analysis_context))
     bv = function.view
     last_index = function.mlil[-1].instr_index
     curr_index = 0
-    has_data_appended = False
+    
     while curr_index < last_index:
         mlil_instr = function.mlil[curr_index]
         if mlil_instr.operation == MediumLevelILOperation.MLIL_INTRINSIC and mlil_instr.intrinsic.name == 'print':
@@ -38,7 +41,13 @@ def outline_prints(analysis_context):
                     function.mlil.replace_expr(mlil,mlil_nop)
                     index += 1
             print(f"Printed string from {start} to {end} at {hex(mlil.address)}: '{printed_string}'")
-            mlil_const_ptr = function.mlil.expr(MediumLevelILOperation.MLIL_CONST_PTR, ExpressionIndex(STRING_BASE),size=4)
+            string_addr = STRING_BASE
+            for ascii_string in bv.strings:
+                if printed_string.decode() == ascii_string.value:
+                    string_addr = ascii_string.start
+                    break
+
+            mlil_const_ptr = function.mlil.expr(MediumLevelILOperation.MLIL_CONST_PTR, ExpressionIndex(string_addr),size=4)
             call_param = function.mlil.expr(MediumLevelILOperation.MLIL_CALL_PARAM,2,function.mlil.add_operand_list([mlil_const_ptr]))
             mlil_intrinsic = function.mlil.expr(MediumLevelILOperation.MLIL_INTRINSIC,0,0,3,1,call_param-1)
             function.mlil.replace_expr(function.mlil[index-1],mlil_intrinsic)
@@ -55,9 +64,10 @@ def outline_prints(analysis_context):
             else:
                 string_data_offset = raw_bv[::].index(printed_string)
 
-            bv.add_auto_segment(STRING_BASE,len(printed_string),string_data_offset,len(printed_string),SegmentFlag.SegmentContainsData|SegmentFlag.SegmentReadable)
-            bv.add_auto_section(f".string_{hex(mlil.address)[2:]}",STRING_BASE,len(printed_string),SectionSemantics.ReadOnlyDataSectionSemantics)
-            STRING_BASE += len(printed_string)
+            if STRING_BASE == string_addr:
+                bv.add_auto_segment(STRING_BASE,len(printed_string),string_data_offset,len(printed_string),SegmentFlag.SegmentContainsData|SegmentFlag.SegmentReadable)
+                bv.add_auto_section(f".string_{hex(mlil.address)[2:]}",STRING_BASE,len(printed_string),SectionSemantics.ReadOnlyDataSectionSemantics)
+                STRING_BASE += len(printed_string)
         else:
             curr_index += 1
     function.mlil.generate_ssa_form()
