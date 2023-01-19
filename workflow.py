@@ -10,10 +10,8 @@ from binaryninja import (
     MediumLevelILFunction
 )
 
-has_data_appended = False
 STRING_BASE = 0xf000
 def outline_prints(analysis_context):
-    global has_data_appended
     global STRING_BASE
 
     function = Function(handle=core.BNAnalysisContextGetFunction(analysis_context))
@@ -56,10 +54,9 @@ def outline_prints(analysis_context):
             raw_bv = bv.file.raw
             printed_string += b"\x00"
             if printed_string not in raw_bv[::]:
-                if has_data_appended is False:
-                    raw_bv.write(len(raw_bv),b"_"*0x10)
-                    has_data_appended = True
-                string_data_offset = len(raw_bv)
+                if (b"_"*0x10) not in raw_bv[::]:
+                    raw_bv.write(raw_bv.length,b"_"*0x10)
+                string_data_offset = raw_bv.length
                 raw_bv.write(string_data_offset,printed_string)
             else:
                 string_data_offset = raw_bv[::].index(printed_string)
