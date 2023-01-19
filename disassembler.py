@@ -72,7 +72,7 @@ class CoolVMDisassembler():
         return tokens,[]
 
     def jnz(self,mnem,instr,addr):
-        target = instr.op3 + addr
+        target = instr.op3 + addr + 4
         tokens = [InstructionTextToken(InstructionTextTokenType.InstructionToken,mnem+" ")]
         tokens.append(InstructionTextToken(InstructionTextTokenType.RegisterToken,instr.op1))
         tokens.append(InstructionTextToken(InstructionTextTokenType.OperandSeparatorToken,", "))

@@ -50,7 +50,7 @@ class CoolVMLifter():
     def jnz(self,instr,addr,il):
         il_reg_zero = il.reg(1,"r4")
         il_zero = il.const(1,0)
-        target = il.const(2,addr+instr.op3)
+        target = il.const(2,addr+instr.op3+4)
         cond = il.compare_not_equal(1,il_reg_zero,il_zero)
         t = LowLevelILLabel()
         f = LowLevelILLabel()
@@ -76,7 +76,6 @@ class CoolVMLifter():
         il.append(il.intrinsic([],"print",[il_op]))
 
     def read(self,instr,addr,il):
-        il_op = il.reg(1,instr.op1)
         temp = LLIL_TEMP(il.temp_reg_count)
         temp_il = ILRegister(il.arch, temp)
         il.append(il.intrinsic([temp_il],"read",[]))
