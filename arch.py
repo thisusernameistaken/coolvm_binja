@@ -3,7 +3,6 @@ from binaryninja import (
     Endianness,
     RegisterInfo,
     IntrinsicInfo,
-    IntrinsicInput,
     Type,
     InstructionInfo
 )
@@ -30,7 +29,7 @@ class CoolVMArch(Architecture):
 
 
     intrinsics = {
-        "read": IntrinsicInfo([Type.char()],[]),
+        "read": IntrinsicInfo([],[Type.char()]),
         "print": IntrinsicInfo([Type.char()],[]),
         "exit": IntrinsicInfo([],[]),
         "printStr": IntrinsicInfo([],[])
